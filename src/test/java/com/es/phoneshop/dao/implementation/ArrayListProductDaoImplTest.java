@@ -1,5 +1,7 @@
 package com.es.phoneshop.model.product;
 
+import com.es.phoneshop.dao.ProductDao;
+import com.es.phoneshop.dao.implementation.ArrayListProductDao;
 import org.junit.Before;
 import org.junit.Test;
 

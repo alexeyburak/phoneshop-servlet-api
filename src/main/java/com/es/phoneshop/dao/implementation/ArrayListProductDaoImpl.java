@@ -1,4 +1,7 @@
-package com.es.phoneshop.model.product;
+package com.es.phoneshop.dao.implementation;
+
+import com.es.phoneshop.dao.ProductDao;
+import com.es.phoneshop.model.product.Product;
 
 import java.util.List;
 
