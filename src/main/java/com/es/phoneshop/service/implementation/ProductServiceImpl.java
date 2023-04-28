@@ -5,7 +5,6 @@ import com.es.phoneshop.dao.implementation.ArrayListProductDaoImpl;
 import com.es.phoneshop.model.Product;
 import com.es.phoneshop.service.ProductService;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +15,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-@Slf4j
 public class ProductServiceImpl implements ProductService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProductServiceImpl.class);
     private final ProductDao productDao;
