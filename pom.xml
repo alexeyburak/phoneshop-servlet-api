@@ -16,6 +16,7 @@
         <jakarta.servlet.jsp.jstl.version>3.0.1</jakarta.servlet.jsp.jstl.version>
         <junit.verison>4.12</junit.verison>
         <mockito-core.version>2.23.0</mockito-core.version>
+        <slf4j-api.version>2.0.7</slf4j-api.version>
     </properties>
 
     <dependencies>
@@ -61,6 +62,12 @@
             <artifactId>mockito-core</artifactId>
             <version>${mockito-core.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j-api.version}</version>
         </dependency>
     </dependencies>
     <build>
