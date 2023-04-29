@@ -17,7 +17,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class ArrayListProductDaoImplTest {
+public class ProductDaoImplTest {
     private Currency usd;
 
     @Mock
@@ -26,7 +26,7 @@ public class ArrayListProductDaoImplTest {
     @Before
     public void setup() {
         usd = Currency.getInstance("USD");
-        productDao = new ArrayListProductDaoImpl();
+        productDao = ProductDaoImpl.getInstance();
     }
 
     @Test

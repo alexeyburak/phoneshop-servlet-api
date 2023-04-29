@@ -1,7 +1,7 @@
 package com.es.phoneshop.service.implementation;
 
 import com.es.phoneshop.dao.ProductDao;
-import com.es.phoneshop.dao.implementation.ArrayListProductDaoImpl;
+import com.es.phoneshop.dao.implementation.ProductDaoImpl;
 import com.es.phoneshop.model.Product;
 import com.es.phoneshop.service.ProductService;
 import lombok.NonNull;
@@ -21,7 +21,7 @@ public class ProductServiceImpl implements ProductService {
     private final ReadWriteLock lock;
 
     public ProductServiceImpl() {
-        productDao = new ArrayListProductDaoImpl();
+        productDao = ProductDaoImpl.getInstance();
         lock = new ReentrantReadWriteLock();
     }
 

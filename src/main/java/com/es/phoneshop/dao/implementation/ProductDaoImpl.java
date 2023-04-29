@@ -11,12 +11,20 @@ import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
 
-public class ArrayListProductDaoImpl implements ProductDao {
+public class ProductDaoImpl implements ProductDao {
     private List<Product> products;
 
-    public ArrayListProductDaoImpl() {
+    private ProductDaoImpl() {
         this.products = new ArrayList<>();
         getSampleProducts();
+    }
+
+    private static final class SingletonHolder {
+        private static final ProductDaoImpl INSTANCE = new ProductDaoImpl();
+    }
+
+    public static ProductDaoImpl getInstance() {
+        return SingletonHolder.INSTANCE;
     }
 
     @Override

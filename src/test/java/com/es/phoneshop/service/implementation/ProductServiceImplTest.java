@@ -1,7 +1,7 @@
 package com.es.phoneshop.service.implementation;
 
 import com.es.phoneshop.dao.ProductDao;
-import com.es.phoneshop.dao.implementation.ArrayListProductDaoImpl;
+import com.es.phoneshop.dao.implementation.ProductDaoImpl;
 import com.es.phoneshop.exception.ProductNotFoundException;
 import com.es.phoneshop.model.Product;
 import com.es.phoneshop.service.ProductService;
@@ -30,7 +30,7 @@ public class ProductServiceImplTest {
     public void setup() {
         usd = Currency.getInstance("USD");
         productService = new ProductServiceImpl();
-        productDao = new ArrayListProductDaoImpl();
+        productDao = ProductDaoImpl.getInstance();
     }
 
     @Test
