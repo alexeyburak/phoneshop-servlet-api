@@ -1,7 +1,6 @@
 package com.es.phoneshop.dao.implementation;
 
 import com.es.phoneshop.dao.ProductDao;
-import com.es.phoneshop.exception.ProductNotFoundException;
 import com.es.phoneshop.model.Product;
 import lombok.NonNull;
 
@@ -9,6 +8,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class ProductDaoImpl implements ProductDao {
@@ -28,11 +28,10 @@ public class ProductDaoImpl implements ProductDao {
     }
 
     @Override
-    public Product getProduct(UUID id) {
+    public Optional<Product> getProduct(UUID id) {
         return products.stream()
                 .filter(product -> id.equals(product.getId()))
-                .findAny()
-                .orElseThrow(ProductNotFoundException::new);
+                .findAny();
     }
 
     @Override
@@ -48,8 +47,9 @@ public class ProductDaoImpl implements ProductDao {
 
     @Override
     public void delete(UUID id) {
-        Product product = this.getProduct(id);
-        products.remove(product);
+        Optional<Product> product = this.getProduct(id);
+
+        product.ifPresent(value -> products.remove(value));
     }
 
     private void getSampleProducts(){

@@ -1,7 +1,6 @@
 package com.es.phoneshop.dao.implementation;
 
 import com.es.phoneshop.dao.ProductDao;
-import com.es.phoneshop.exception.ProductNotFoundException;
 import com.es.phoneshop.model.Product;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,22 +35,11 @@ public class ProductDaoImplTest {
         final UUID id = product.getId();
 
         // when
-        Product result = productDao.getProduct(id);
+        Product result = productDao.getProduct(id).get();
 
         // then
         assertNotNull(result);
         assertEquals(product, result);
-    }
-
-    @Test(expected = ProductNotFoundException.class)
-    public void getProduct_InvalidId_ShouldNotThrowException() {
-        // given
-        final UUID invalidId = UUID.randomUUID();
-
-        // when
-        productDao.getProduct(invalidId);
-
-        // then (exception is thrown)
     }
 
     @Test
