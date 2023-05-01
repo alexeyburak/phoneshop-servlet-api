@@ -73,18 +73,14 @@ public class ProductDaoImplTest {
     @Test
     public void delete_ValidId_ShouldRemoveProductFromDao() {
         // given
-        final Product product = new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, 40, "https://..");
-        productDao.save(product);
+        final Product product = productDao.findProducts().get(0);
         final UUID id = product.getId();
 
         // when
-        List<Product> productList = productDao.findProducts();
-        assertTrue(productList.contains(product));
-
         productDao.delete(id);
+        List<Product> result = productDao.findProducts();
 
         // then
-        productList = productDao.findProducts();
-        assertFalse(productList.contains(product));
+        assertFalse(result.contains(product));
     }
 }

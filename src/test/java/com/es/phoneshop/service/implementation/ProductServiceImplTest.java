@@ -1,24 +1,27 @@
 package com.es.phoneshop.service.implementation;
 
 import com.es.phoneshop.dao.ProductDao;
-import com.es.phoneshop.dao.implementation.ProductDaoImpl;
 import com.es.phoneshop.exception.ProductNotFoundException;
 import com.es.phoneshop.model.Product;
 import com.es.phoneshop.service.ProductService;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class ProductServiceImplTest {
     private ProductService productService;
     private Currency usd;
@@ -29,26 +32,21 @@ public class ProductServiceImplTest {
     @Before
     public void setup() {
         usd = Currency.getInstance("USD");
-        productService = new ProductServiceImpl();
-        productDao = ProductDaoImpl.getInstance();
+        productService = new ProductServiceImpl(productDao);
     }
 
     @Test
     public void getProduct_ValidId_ShouldReturnProductWithIdFromDao() {
         // given
-        final UUID id = productService.findProducts().get(0).getId();
-        final BigDecimal expectedPrice = new BigDecimal(100);
-        final String expectedDescription = "Samsung Galaxy S";
-        final int expectedStock = 100;
+        final Product product = new Product(UUID.randomUUID(), "sgs2", "Samsung Galaxy S II", new BigDecimal(200), usd, 0, "https://..");
+        final UUID id = product.getId();
 
         // when
-        Product product = productService.getProduct(id);
+        when(productDao.getProduct(id)).thenReturn(Optional.of(product));
+        productService.getProduct(id);
 
         // then
-        assertNotNull(product);
-        assertEquals(expectedPrice, product.getPrice());
-        assertEquals(expectedDescription, product.getDescription());
-        assertEquals(expectedStock, product.getStock());
+        verify(productDao, times(1)).getProduct(id);
     }
 
     @Test(expected = ProductNotFoundException.class)
@@ -62,7 +60,7 @@ public class ProductServiceImplTest {
         // then (exception is thrown)
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void getProduct_NullId_ShouldThrowIllegalArgumentException() {
         // when
         productService.getProduct(null);
@@ -73,10 +71,10 @@ public class ProductServiceImplTest {
     @Test
     public void findProducts_ShouldReturnProductListFromDao() {
         // when
-        List<Product> products = productService.findProducts();
+        productService.findProducts();
 
         // then
-        assertFalse(products.isEmpty());
+        verify(productDao, times(1)).findProducts();
     }
 
     @Test
@@ -110,7 +108,7 @@ public class ProductServiceImplTest {
     }
 
     @Test
-    public void testNotShowingProductWithNullPrice() {
+    public void findProducts_ProductWithNullPrice_ShouldNotIncludeProductToList() {
         // given
         final Product productWithNullPrice = new Product("simsxg75", "Siemens SXG75", null, usd, 40, "https://raw.githubusercontent.com/andrewosipenko/phoneshop-ext-images/master/manufacturer/Siemens/Siemens%20SXG75.jpg");
         productDao.save(productWithNullPrice);
@@ -126,17 +124,16 @@ public class ProductServiceImplTest {
     @Test
     public void save_ShouldSaveProductToDao() {
         // given
-        final Product product = new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(200), usd, 0, "https://raw.githubusercontent.com/andrewosipenko/phoneshop-ext-images/master/manufacturer/Samsung/Samsung%20Galaxy%20S%20II.jpg");
+        final Product product = new Product(UUID.randomUUID(), "sgs2", "Samsung Galaxy S II", new BigDecimal(200), usd, 0, "https://raw.githubusercontent.com/andrewosipenko/phoneshop-ext-images/master/manufacturer/Samsung/Samsung%20Galaxy%20S%20II.jpg");
 
         // when
         productService.save(product);
-        UUID id = product.getId();
 
         // then
-        assertEquals(product, productService.getProduct(id));
+        verify(productDao, times(1)).save(product);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void delete_NullId_ShouldThrowIllegalArgumentException() {
         // when
         productService.delete(null);
@@ -144,18 +141,16 @@ public class ProductServiceImplTest {
         // then (exception is thrown)
     }
 
-    @Test(expected = ProductNotFoundException.class)
-    public void delete_ValidId_ShouldThrowProductNotFoundException() {
+    @Test
+    public void delete_ValidId_ShouldRemoveProductFromDao() {
         // given
-        final Product product = new Product("simsxg75", "Siemens SXG75", null, usd, 40, "https://raw.githubusercontent.com/andrewosipenko/phoneshop-ext-images/master/manufacturer/Siemens/Siemens%20SXG75.jpg");
-        productDao.save(product);
-        final UUID id = product.getId();
+        final UUID id = UUID.randomUUID();
 
         // when
         productService.delete(id);
 
-        // then (exception is thrown)
-        productService.getProduct(id);
+        // then
+        verify(productDao, times(1)).delete(id);
     }
 
 }

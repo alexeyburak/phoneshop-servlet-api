@@ -2,6 +2,7 @@ package com.es.phoneshop.dao.implementation;
 
 import com.es.phoneshop.dao.ProductDao;
 import com.es.phoneshop.model.Product;
+import com.es.phoneshop.service.Procedure;
 import lombok.NonNull;
 
 import java.math.BigDecimal;
@@ -10,12 +11,17 @@ import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 
 public class ProductDaoImpl implements ProductDao {
+    private final ReadWriteLock lock;
     private List<Product> products;
 
     private ProductDaoImpl() {
         this.products = new ArrayList<>();
+        lock = new ReentrantReadWriteLock();
         getSampleProducts();
     }
 
@@ -29,30 +35,56 @@ public class ProductDaoImpl implements ProductDao {
 
     @Override
     public Optional<Product> getProduct(UUID id) {
-        return products.stream()
-                .filter(product -> id.equals(product.getId()))
-                .findAny();
+        return executeReadLock(() ->
+                products.stream()
+                        .filter(product -> id.equals(product.getId()))
+                        .findAny()
+        );
     }
 
     @Override
     public List<Product> findProducts() {
-        return products;
+        return executeReadLock(() -> products);
+    }
+
+    private <T> T executeReadLock(@NonNull Supplier<T> supplier) {
+        lock.readLock().lock();
+        try {
+            return supplier.get();
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     @Override
     public void save(@NonNull Product product) {
         product.setId(getRandomUUID());
-        products.add(product);
+
+        executeWriteLock(() ->
+                products.add(product)
+        );
     }
 
     @Override
     public void delete(UUID id) {
-        Optional<Product> product = this.getProduct(id);
-
-        product.ifPresent(value -> products.remove(value));
+        executeWriteLock(() ->
+                products.stream()
+                        .filter(product -> id.equals(product.getId()))
+                        .findAny()
+                        .ifPresent(products::remove)
+        );
     }
 
-    private void getSampleProducts(){
+    private void executeWriteLock(@NonNull Procedure procedure) {
+        lock.writeLock().lock();
+        try {
+            procedure.get();
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    private void getSampleProducts() {
         Currency usd = Currency.getInstance("USD");
         save(new Product("sgs", "Samsung Galaxy S", new BigDecimal(100), usd, 100, "https://raw.githubusercontent.com/andrewosipenko/phoneshop-ext-images/master/manufacturer/Samsung/Samsung%20Galaxy%20S.jpg"));
         save(new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(200), usd, 0, "https://raw.githubusercontent.com/andrewosipenko/phoneshop-ext-images/master/manufacturer/Samsung/Samsung%20Galaxy%20S%20II.jpg"));
