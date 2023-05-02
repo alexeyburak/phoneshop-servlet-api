@@ -11,12 +11,15 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,15 +41,16 @@ public class ProductServiceImplTest {
     @Test
     public void getProduct_ValidId_ShouldReturnProductWithIdFromDao() {
         // given
-        final Product product = new Product(UUID.randomUUID(), "sgs2", "Samsung Galaxy S II", new BigDecimal(200), usd, 0, "https://..");
-        final UUID id = product.getId();
+        final Product expectedProduct = new Product(UUID.randomUUID(), "sgs2", "Samsung Galaxy S II", new BigDecimal(200), usd, 0, "https://..");
+        final UUID id = expectedProduct.getId();
+        when(productDao.getProduct(id)).thenReturn(Optional.of(expectedProduct));
 
         // when
-        when(productDao.getProduct(id)).thenReturn(Optional.of(product));
-        productService.getProduct(id);
+        Product result = productService.getProduct(id);
 
         // then
         verify(productDao, times(1)).getProduct(id);
+        assertEquals(expectedProduct, result);
     }
 
     @Test(expected = ProductNotFoundException.class)
@@ -70,19 +74,30 @@ public class ProductServiceImplTest {
 
     @Test
     public void findProducts_ShouldReturnProductListFromDao() {
+        // given
+        List<Product> expectedProducts = Arrays.asList(
+                new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, 100, "https://.."),
+                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..")
+        );
+        when(productDao.findProducts()).thenReturn(expectedProducts);
+
         // when
-        productService.findProducts();
+        List<Product> result = productService.findProducts();
 
         // then
         verify(productDao, times(1)).findProducts();
+        assertEquals(expectedProducts, result);
     }
 
     @Test
     public void findProducts_ProductWithZeroStock_ShouldNotIncludeProductToList() {
         // given
         final int stock = 0;
-        final Product productWithZeroStock = new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, stock, "https://raw.githubusercontent.com/andrewosipenko/phoneshop-ext-images/master/manufacturer/Siemens/Siemens%20SXG75.jpg");
-        productDao.save(productWithZeroStock);
+        List<Product> expectedProducts = Arrays.asList(
+                new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, stock, "https://.."),
+                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..")
+        );
+        when(productDao.findProducts()).thenReturn(expectedProducts);
 
         // when
         List<Product> result = productService.findProducts();
@@ -96,8 +111,11 @@ public class ProductServiceImplTest {
     public void findProducts_ProductWithNegativeStock_ShouldNotIncludeProductToList() {
         // given
         final int stock = -1;
-        final Product productWithZeroStock = new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, stock, "https://raw.githubusercontent.com/andrewosipenko/phoneshop-ext-images/master/manufacturer/Siemens/Siemens%20SXG75.jpg");
-        productDao.save(productWithZeroStock);
+        List<Product> expectedProducts = Arrays.asList(
+                new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, stock, "https://.."),
+                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..")
+        );
+        when(productDao.findProducts()).thenReturn(expectedProducts);
 
         // when
         List<Product> result = productService.findProducts();
@@ -110,8 +128,11 @@ public class ProductServiceImplTest {
     @Test
     public void findProducts_ProductWithNullPrice_ShouldNotIncludeProductToList() {
         // given
-        final Product productWithNullPrice = new Product("simsxg75", "Siemens SXG75", null, usd, 40, "https://raw.githubusercontent.com/andrewosipenko/phoneshop-ext-images/master/manufacturer/Siemens/Siemens%20SXG75.jpg");
-        productDao.save(productWithNullPrice);
+        List<Product> expectedProducts = Arrays.asList(
+                new Product("simsxg75", "Siemens SXG75", null, usd, 100, "https://.."),
+                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..")
+        );
+        when(productDao.findProducts()).thenReturn(expectedProducts);
 
         // when
         List<Product> result = productService.findProducts();
@@ -124,7 +145,8 @@ public class ProductServiceImplTest {
     @Test
     public void save_ShouldSaveProductToDao() {
         // given
-        final Product product = new Product(UUID.randomUUID(), "sgs2", "Samsung Galaxy S II", new BigDecimal(200), usd, 0, "https://raw.githubusercontent.com/andrewosipenko/phoneshop-ext-images/master/manufacturer/Samsung/Samsung%20Galaxy%20S%20II.jpg");
+        final Product product = new Product(UUID.randomUUID(), "sgs2", "Samsung Galaxy S II", new BigDecimal(200), usd, 0, "https://..");
+        doNothing().when(productDao).save(product);
 
         // when
         productService.save(product);
@@ -145,6 +167,7 @@ public class ProductServiceImplTest {
     public void delete_ValidId_ShouldRemoveProductFromDao() {
         // given
         final UUID id = UUID.randomUUID();
+        doNothing().when(productDao).delete(id);
 
         // when
         productService.delete(id);

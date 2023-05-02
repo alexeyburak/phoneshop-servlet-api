@@ -45,7 +45,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public void save(Product product) {
         productDao.save(product);
-        LOGGER.debug("Save product.");
+        LOGGER.debug("Save product. Id: {}", product.getId());
     }
 
     @Override
