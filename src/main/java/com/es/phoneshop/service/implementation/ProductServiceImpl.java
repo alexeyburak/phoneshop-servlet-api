@@ -2,12 +2,13 @@ package com.es.phoneshop.service.implementation;
 
 import com.es.phoneshop.dao.ProductDao;
 import com.es.phoneshop.dao.implementation.ProductDaoImpl;
+import com.es.phoneshop.model.ProductSortCriteria;
 import com.es.phoneshop.exception.ProductNotFoundException;
 import com.es.phoneshop.model.Product;
 import com.es.phoneshop.service.ProductService;
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import lombok.NonNull;
 
 import java.util.List;
 import java.util.UUID;
@@ -34,8 +35,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<Product> findProducts() {
-        return productDao.findProducts()
+    public List<Product> findProducts(String query, ProductSortCriteria sort) {
+        return productDao.findProducts(query, sort)
                 .stream()
                 .filter(product -> product.getPrice() != null)
                 .filter(product -> product.getStock() > 0)

@@ -17,5 +17,8 @@
   <main>
     <jsp:doBody/>
   </main>
+  <footer>
+    <p> (c) Expert-soft</p>
+  </footer>
 </body>
 </html>
