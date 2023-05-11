@@ -1,6 +1,7 @@
-package com.es.phoneshop.service.implementation;
+package com.es.phoneshop.service.impl;
 
 import com.es.phoneshop.dao.ProductDao;
+import com.es.phoneshop.model.ProductSortCriteria;
 import com.es.phoneshop.exception.ProductNotFoundException;
 import com.es.phoneshop.model.Product;
 import com.es.phoneshop.service.ProductService;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doNothing;
@@ -28,6 +30,8 @@ import static org.mockito.Mockito.when;
 public class ProductServiceImplTest {
     private ProductService productService;
     private Currency usd;
+    private String query;
+    private ProductSortCriteria sortCriteria;
 
     @Mock
     private ProductDao productDao;
@@ -35,6 +39,8 @@ public class ProductServiceImplTest {
     @Before
     public void setup() {
         usd = Currency.getInstance("USD");
+        query = EMPTY;
+        sortCriteria = null;
         productService = new ProductServiceImpl(productDao);
     }
 
@@ -76,16 +82,16 @@ public class ProductServiceImplTest {
     public void findProducts_ShouldReturnProductListFromDao() {
         // given
         List<Product> expectedProducts = Arrays.asList(
-                new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, 100, "https://.."),
-                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..")
+                new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, 100, "https://..", null),
+                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..", null)
         );
-        when(productDao.findProducts()).thenReturn(expectedProducts);
+        when(productDao.findProducts(query, sortCriteria)).thenReturn(expectedProducts);
 
         // when
-        List<Product> result = productService.findProducts();
+        List<Product> result = productService.findProducts(query, sortCriteria);
 
         // then
-        verify(productDao, times(1)).findProducts();
+        verify(productDao, times(1)).findProducts(query, sortCriteria);
         assertEquals(expectedProducts, result);
     }
 
@@ -94,13 +100,13 @@ public class ProductServiceImplTest {
         // given
         final int stock = 0;
         List<Product> expectedProducts = Arrays.asList(
-                new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, stock, "https://.."),
-                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..")
+                new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, stock, "https://..", null),
+                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..", null)
         );
-        when(productDao.findProducts()).thenReturn(expectedProducts);
+        when(productDao.findProducts(query, sortCriteria)).thenReturn(expectedProducts);
 
         // when
-        List<Product> result = productService.findProducts();
+        List<Product> result = productService.findProducts(query, sortCriteria);
 
         // then
         assertTrue(result.stream()
@@ -112,13 +118,13 @@ public class ProductServiceImplTest {
         // given
         final int stock = -1;
         List<Product> expectedProducts = Arrays.asList(
-                new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, stock, "https://.."),
-                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..")
+                new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, stock, "https://..", null),
+                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..", null)
         );
-        when(productDao.findProducts()).thenReturn(expectedProducts);
+        when(productDao.findProducts(query, sortCriteria)).thenReturn(expectedProducts);
 
         // when
-        List<Product> result = productService.findProducts();
+        List<Product> result = productService.findProducts(query, sortCriteria);
 
         // then
         assertTrue(result.stream()
@@ -129,13 +135,13 @@ public class ProductServiceImplTest {
     public void findProducts_ProductWithNullPrice_ShouldNotIncludeProductToList() {
         // given
         List<Product> expectedProducts = Arrays.asList(
-                new Product("simsxg75", "Siemens SXG75", null, usd, 100, "https://.."),
-                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..")
+                new Product("simsxg75", "Siemens SXG75", null, usd, 100, "https://..", null),
+                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..", null)
         );
-        when(productDao.findProducts()).thenReturn(expectedProducts);
+        when(productDao.findProducts(query, sortCriteria)).thenReturn(expectedProducts);
 
         // when
-        List<Product> result = productService.findProducts();
+        List<Product> result = productService.findProducts(query, sortCriteria);
 
         // then
         assertTrue(result.stream()

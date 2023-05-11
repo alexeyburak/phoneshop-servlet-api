@@ -5,7 +5,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Currency;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -22,8 +24,10 @@ public class Product {
     private Currency currency;
     private int stock;
     private String imageUrl;
+    private List<PriceChange> priceHistory = new ArrayList<>();
 
-    public Product(UUID id, String code, String description, BigDecimal price, Currency currency, int stock, String imageUrl) {
+    public Product(UUID id, String code, String description, BigDecimal price, Currency currency, int stock,
+                   String imageUrl) {
         this.id = id;
         this.code = code;
         this.description = description;
@@ -33,13 +37,15 @@ public class Product {
         this.imageUrl = imageUrl;
     }
 
-    public Product(String code, String description, BigDecimal price, Currency currency, int stock, String imageUrl) {
+    public Product(String code, String description, BigDecimal price, Currency currency, int stock, String imageUrl,
+                   List<PriceChange> priceHistory) {
         this.code = code;
         this.description = description;
         this.price = price;
         this.currency = currency;
         this.stock = stock;
         this.imageUrl = imageUrl;
+        this.priceHistory = priceHistory;
     }
 
     @Override
@@ -47,7 +53,10 @@ public class Product {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Product product = (Product) o;
-        return stock == product.stock && Objects.equals(id, product.id) && Objects.equals(code, product.code) && Objects.equals(description, product.description) && Objects.equals(price, product.price);
+        return stock == product.stock && Objects.equals(id, product.id) &&
+                Objects.equals(code, product.code) &&
+                Objects.equals(description, product.description) &&
+                Objects.equals(price, product.price);
     }
 
     @Override

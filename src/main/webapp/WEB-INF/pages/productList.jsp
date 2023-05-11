@@ -8,12 +8,24 @@
   <p>
     Welcome to Expert-Soft training!
   </p>
+  <form>
+    <input name="query" type="text" value="${param.query}" placeholder="Search product">
+    <button>Search</button>
+  </form>
   <table>
     <thead>
       <tr>
         <td>Image</td>
-        <td>Description</td>
-        <td class="price">Price</td>
+        <td>
+          Description
+          <tags:sortLink order="asc" sort="description"/>
+          <tags:sortLink order="desc" sort="description"/>
+        </td>
+        <td>
+          Price
+          <tags:sortLink order="asc" sort="price"/>
+          <tags:sortLink order="desc" sort="price"/>
+        </td>
       </tr>
     </thead>
     <c:forEach var="product" items="${products}">
@@ -21,9 +33,29 @@
         <td>
           <img class="product-tile" src="${product.imageUrl}">
         </td>
-        <td>${product.description}</td>
+        <td>
+          <a href="${pageContext.servletContext.contextPath}/products/${product.id}">
+            ${product.description}
+          </a>
+        </td>
         <td class="price">
-          <fmt:formatNumber value="${product.price}" type="currency" currencySymbol="${product.currency.symbol}"/>
+          <div>
+            <a href="#popup${product.id}">
+              <fmt:formatNumber value="${product.price}" type="currency" currencySymbol="${product.currency.symbol}"/>
+            </a>
+          </div>
+          <div id="popup${product.id}" class="overlay">
+            <div class="popup">
+              <h2>Price history</h2>
+              <h1>${product.description}</h1>
+              <a class="close" href="#">&times;</a>
+              <div class="content">
+                <c:forEach var="history" items="${product.priceHistory}">
+                  <p>${history.createdAt} - <fmt:formatNumber value="${history.price}" type="currency" currencySymbol="&#36"/></p>
+                </c:forEach>
+              </div>
+            </div>
+          </div>
         </td>
       </tr>
     </c:forEach>
