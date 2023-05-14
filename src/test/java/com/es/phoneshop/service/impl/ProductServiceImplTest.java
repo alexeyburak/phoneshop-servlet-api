@@ -11,6 +11,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Currency;
@@ -37,11 +38,15 @@ public class ProductServiceImplTest {
     private ProductDao productDao;
 
     @Before
-    public void setup() {
+    public void setup() throws NoSuchFieldException, IllegalAccessException {
         usd = Currency.getInstance("USD");
         query = EMPTY;
         sortCriteria = null;
-        productService = new ProductServiceImpl(productDao);
+        productService = ProductServiceImpl.getInstance();
+
+        Field productDaoField = productService.getClass().getDeclaredField("productDao");
+        productDaoField.setAccessible(true);
+        productDaoField.set(productService, productDao);
     }
 
     @Test
