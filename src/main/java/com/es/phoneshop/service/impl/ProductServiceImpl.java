@@ -18,12 +18,16 @@ public class ProductServiceImpl implements ProductService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProductServiceImpl.class);
     private final ProductDao productDao;
 
-    public ProductServiceImpl() {
+    private ProductServiceImpl() {
         productDao = ProductDaoImpl.getInstance();
     }
 
-    public ProductServiceImpl(ProductDao productDao) {
-        this.productDao = productDao;
+    private static final class SingletonHolder {
+        private static final ProductServiceImpl INSTANCE = new ProductServiceImpl();
+    }
+
+    public static ProductServiceImpl getInstance() {
+        return SingletonHolder.INSTANCE;
     }
 
     @Override

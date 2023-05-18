@@ -86,3 +86,35 @@ body.product-list {
   max-height: 30%;
   overflow: auto;
 }
+
+.success {
+  color: green;
+}
+
+.error {
+  color: red;
+}
+
+.recent-products-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: left;
+}
+
+.recent-product-card {
+  margin: 10px;
+  text-align: center;
+}
+
+.recent-product-image {
+  max-width: 100px;
+  margin-bottom: 5px;
+}
+
+.recent-product-description {
+  margin-bottom: 5px;
+}
+
+.recent-product-price {
+  font-weight: bold;
+}

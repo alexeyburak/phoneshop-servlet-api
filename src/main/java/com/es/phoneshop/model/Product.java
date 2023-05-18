@@ -63,4 +63,5 @@ public class Product {
     public int hashCode() {
         return Objects.hash(id, code, description, price, currency, stock, imageUrl);
     }
+
 }
