@@ -1,9 +1,11 @@
 package com.es.phoneshop.web;
 
+import com.es.phoneshop.model.Cart;
 import com.es.phoneshop.model.ProductSortCriteria;
 import com.es.phoneshop.model.RecentlyViewedProductUnit;
 import com.es.phoneshop.model.enums.SortField;
 import com.es.phoneshop.model.enums.SortOrder;
+import com.es.phoneshop.service.CartService;
 import com.es.phoneshop.service.ProductService;
 import com.es.phoneshop.service.RecentlyViewedProductsService;
 import com.es.phoneshop.service.impl.ProductServiceImpl;
@@ -13,6 +15,7 @@ import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,6 +27,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Locale;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -31,6 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,6 +51,10 @@ public class ProductListPageServletTest {
     @Mock
     private ProductService productService;
     @Mock
+    private HttpSession httpSession;
+    @Mock
+    private CartService cartService;
+    @Mock
     private RecentlyViewedProductsService recentlyViewedProductsService;
     @InjectMocks
     private ProductListPageServlet servlet = new ProductListPageServlet();
@@ -52,6 +62,9 @@ public class ProductListPageServletTest {
     @Before
     public void setup() {
         when(request.getRequestDispatcher(anyString())).thenReturn(requestDispatcher);
+        when(request.getLocale()).thenReturn(Locale.ENGLISH);
+        when(request.getSession()).thenReturn(httpSession);
+        when(recentlyViewedProductsService.get(any())).thenReturn(new RecentlyViewedProductUnit());
     }
 
     @Test
@@ -75,9 +88,6 @@ public class ProductListPageServletTest {
 
     @Test
     public void doGet_ShouldCheckValidRequestAttributes() throws ServletException, IOException {
-        // given
-        when(recentlyViewedProductsService.get(any())).thenReturn(new RecentlyViewedProductUnit());
-
         // when
         servlet.doGet(request, response);
 
@@ -117,4 +127,52 @@ public class ProductListPageServletTest {
         // then
         assertNull(criteria);
     }
+
+    @Test
+    public void doPost_ValidParameters_ShouldRedirectToSuccessPage() throws ServletException, IOException {
+        // given
+        final Cart cart = new Cart();
+        final UUID id = UUID.randomUUID();
+        when(request.getParameter("productId")).thenReturn(id.toString());
+        when(request.getParameter("quantity")).thenReturn("2");
+        when(cartService.get(httpSession)).thenReturn(cart);
+
+        // when
+        servlet.doPost(request, response);
+
+        // then
+        verify(response).sendRedirect(request.getContextPath() + "/products?message=Product added to cart");
+    }
+
+    @Test
+    public void doPost_NegativeQuantity_ShouldRedirectToErrorPage() throws ServletException, IOException {
+        // given
+        final Cart cart = new Cart();
+        final UUID id = UUID.randomUUID();
+        when(request.getParameter("productId")).thenReturn(id.toString());
+        when(request.getParameter("quantity")).thenReturn("-22");
+
+        // when
+        servlet.doPost(request, response);
+
+        // then
+        verify(requestDispatcher).forward(request, response);
+        verify(response, never()).sendRedirect(request.getContextPath() + "/products?message=Product added to cart");
+    }
+
+    @Test
+    public void doPost_InvalidFormatQuantity_ShouldRedirectToErrorPage() throws ServletException, IOException {
+        // given
+        final UUID id = UUID.randomUUID();
+        when(request.getParameter("productId")).thenReturn(id.toString());
+        when(request.getParameter("quantity")).thenReturn("wasd");
+
+        // when
+        servlet.doPost(request, response);
+
+        // then
+        verify(requestDispatcher).forward(request, response);
+        verify(response, never()).sendRedirect(request.getContextPath() + "/products?message=Product added to cart");
+    }
+
 }

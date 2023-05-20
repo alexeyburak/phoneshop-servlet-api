@@ -115,4 +115,121 @@ public class CartServiceImplTest {
         // then (exception is thrown)
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void add_NegativeQuantity_ShouldThrowIllegalArgumentException() throws OutOfStockException {
+        // given
+        final UUID id = UUID.randomUUID();
+        final Cart cart = new Cart();
+        final int quantityToAdd = -1000;
+
+        // when
+        cartService.add(cart, id, quantityToAdd);
+
+        // then (exception is thrown)
+    }
+
+    @Test
+    public void recalculateCart_ExistingCart_ShouldRecalculateCartAfterAddOperation() throws OutOfStockException {
+        // given
+        final UUID id = UUID.randomUUID();
+        final Cart cart = new Cart();
+        final int quantityToAdd = 1;
+
+        // when
+        cartService.add(cart, id, quantityToAdd);
+
+        // then
+        assertEquals(product.getPrice(), cart.getTotalCost());
+        assertEquals(quantityToAdd, cart.getTotalQuantity());
+    }
+
+    @Test
+    public void update_ValidQuantity_ShouldUpdateProductQuantity() throws OutOfStockException {
+        // given
+        final UUID id = UUID.randomUUID();
+        final Cart cart = new Cart();
+        final int updatedQuantity = 10;
+        cart.getItems().add(new CartItem(product, 2));
+
+        // when
+        cartService.update(cart, id, updatedQuantity);
+
+        // then
+        assertEquals(1, cart.getItems().size());
+        assertEquals(updatedQuantity, cart.getItems().get(0).getQuantity());
+    }
+
+    @Test(expected = OutOfStockException.class)
+    public void update_SufficientStock_ShouldThrowOutOfStockException() throws OutOfStockException {
+        // given
+        final UUID id = UUID.randomUUID();
+        final Cart cart = new Cart();
+        final int updatedQuantity = 10_000_000;
+        cart.getItems().add(new CartItem(product, 2));
+
+        // when
+        cartService.update(cart, id, updatedQuantity);
+
+        // then (exception is thrown)
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void update_NegativeQuantity_ShouldThrowIllegalArgumentException() throws OutOfStockException {
+        // given
+        final UUID id = UUID.randomUUID();
+        final Cart cart = new Cart();
+        final int updatedQuantity = -1000;
+        cart.getItems().add(new CartItem(product, 2));
+
+        // when
+        cartService.update(cart, id, updatedQuantity);
+
+        // then (exception is thrown)
+    }
+
+    @Test
+    public void recalculateCart_ExistingCart_ShouldRecalculateCartAfterUpdateOperation() throws OutOfStockException {
+        // given
+        final UUID id = UUID.randomUUID();
+        final Cart cart = new Cart();
+        final int updatedQuantity = 1;
+        cart.getItems().add(new CartItem(product, 10));
+
+        // when
+        cartService.update(cart, id, updatedQuantity);
+
+        // then
+        assertEquals(product.getPrice(), cart.getTotalCost());
+        assertEquals(1, cart.getTotalQuantity());
+    }
+
+    @Test
+    public void delete_ValidId_ShouldRemoveProductFromCart() {
+        // given
+        final Cart cart = new Cart();
+        cart.getItems().add(new CartItem(product, 1));
+        final UUID id = product.getId();
+
+        // when
+        cartService.delete(cart, id);
+
+        // then
+        assertEquals(0, cart.getItems().size());
+    }
+
+    @Test
+    public void recalculateCart_ExistingCart_ShouldRecalculateCartAfterDeleteOperation() {
+        // given
+        final Cart cart = new Cart();
+        cart.getItems().add(new CartItem(product, 1));
+        final UUID id = product.getId();
+
+        // when
+        cartService.delete(cart, id);
+
+        // then
+        assertEquals(BigDecimal.ZERO, cart.getTotalCost());
+        assertEquals(0, cart.getTotalQuantity());
+    }
+
 }

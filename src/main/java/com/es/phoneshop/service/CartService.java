@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface CartService {
     Cart get(HttpSession session);
     void add(Cart cart, UUID productId, int quantity) throws OutOfStockException;
+    void update(Cart cart, UUID productId, int quantity) throws OutOfStockException;
+    void delete(Cart cart, UUID productId);
 }

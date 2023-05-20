@@ -144,7 +144,7 @@ public class ProductDetailsPageServletTest {
 
         // then
         verify(response, never()).sendRedirect(anyString());
-        verify(request).setAttribute("error", "Not a number");
+        verify(request).setAttribute("error", "Invalid number format");
     }
 
     @Test

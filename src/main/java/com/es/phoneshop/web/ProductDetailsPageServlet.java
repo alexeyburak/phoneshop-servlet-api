@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class ProductDetailsPageServlet extends HttpServlet {
     private static final String REQUEST_ATTRIBUTE_PRODUCT = "product";
@@ -30,6 +31,8 @@ public class ProductDetailsPageServlet extends HttpServlet {
     private static final String REQUEST_DISPATCHER_PRODUCT = "/WEB-INF/pages/product.jsp";
     private static final String MESSAGE_NOT_A_NUMBER = "Not a number";
     private static final String MESSAGE_NOT_IN_STOCK = "Not available in stock";
+    private static final String MESSAGE_INVALID_NUMBER_FORMAT = "Invalid number format";
+    private static final String MESSAGE_NEGATIVE_VALUE = "Negative value";
     private ProductService productService;
     private CartService cartService;
     private RecentlyViewedProductsService recentlyViewedService;
@@ -78,6 +81,9 @@ public class ProductDetailsPageServlet extends HttpServlet {
         } catch (ParseException e) {
             handleErrorAndForward(request, response, MESSAGE_NOT_A_NUMBER);
             return false;
+        } catch (NumberFormatException e) {
+            handleErrorAndForward(request, response, MESSAGE_INVALID_NUMBER_FORMAT);
+            return false;
         }
 
         Cart cart = cartService.get(request.getSession());
@@ -86,13 +92,26 @@ public class ProductDetailsPageServlet extends HttpServlet {
         } catch (OutOfStockException e) {
             handleErrorAndForward(request, response, MESSAGE_NOT_IN_STOCK);
             return false;
+        } catch (IllegalArgumentException e) {
+            handleErrorAndForward(request, response, MESSAGE_NEGATIVE_VALUE);
+            return false;
         }
         return true;
     }
 
     private int parseQuantity(HttpServletRequest request) throws ParseException {
         NumberFormat format = NumberFormat.getInstance(request.getLocale());
-        return format.parse(request.getParameter(REQUEST_PARAMETER_QUANTITY)).intValue();
+        String quantity = request.getParameter(REQUEST_PARAMETER_QUANTITY);
+
+        validateInteger(quantity);
+        return format.parse(quantity).intValue();
+    }
+
+    private void validateInteger(String value) {
+        String DIGIT_REGEX = "^\\d+$";
+        if (!Pattern.matches(DIGIT_REGEX, value)) {
+            throw new NumberFormatException();
+        }
     }
 
     private void handleErrorAndForward(HttpServletRequest request, HttpServletResponse response, String message)

@@ -5,11 +5,14 @@ import com.es.phoneshop.model.RecentlyViewedProductUnit;
 import com.es.phoneshop.service.ProductService;
 import com.es.phoneshop.service.RecentlyViewedProductsService;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 import java.util.UUID;
 
 public class RecentlyViewedProductsServiceImpl implements RecentlyViewedProductsService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RecentlyViewedProductsServiceImpl.class);
     private static final String RECENTLY_VIEWED_PRODUCT_SESSION_ATTRIBUTE = RecentlyViewedProductsServiceImpl.class.getName() +
             ".product";
     private static final int MAX_RECENTLY_VIEWED_PRODUCTS = 3;
@@ -29,7 +32,9 @@ public class RecentlyViewedProductsServiceImpl implements RecentlyViewedProducts
 
     @Override
     public RecentlyViewedProductUnit get(HttpSession session) {
-        synchronized (session.getId().intern()) {
+        String sessionId = session.getId();
+
+        synchronized (sessionId.intern()) {
             RecentlyViewedProductUnit viewedProducts = (RecentlyViewedProductUnit) session
                     .getAttribute(RECENTLY_VIEWED_PRODUCT_SESSION_ATTRIBUTE);
 
@@ -37,6 +42,8 @@ public class RecentlyViewedProductsServiceImpl implements RecentlyViewedProducts
                 viewedProducts = new RecentlyViewedProductUnit();
                 session.setAttribute(RECENTLY_VIEWED_PRODUCT_SESSION_ATTRIBUTE, viewedProducts);
             }
+
+            LOGGER.debug("Get recently viewed unit. Session id: {}", sessionId);
             return viewedProducts;
         }
     }
@@ -55,6 +62,7 @@ public class RecentlyViewedProductsServiceImpl implements RecentlyViewedProducts
             }
 
             products.add(product);
+            LOGGER.debug("Add product to recently viewed unit. Product id: {}", productId);
         }
     }
 
