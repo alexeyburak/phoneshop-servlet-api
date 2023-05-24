@@ -5,7 +5,9 @@
 
 <jsp:useBean id="cart" type="com.es.phoneshop.model.Cart" scope="request"/>
 <tags:master pageTitle="Cart">
-  <form method="POST" action="${pageContext.servletContext.contextPath}/cart">
+  <c:set var="contextPath" value="${pageContext.servletContext.contextPath}"/>
+
+  <form method="POST" action="${contextPath}/cart">
     <tags:successAndErrorMesages errorMessage="There was an error updating the cart" successMessage="${param.message}"/>
     <br>
     <table>
@@ -19,41 +21,42 @@
         </tr>
       </thead>
       <c:forEach var="item" items="${cart.items}" varStatus="status">
+        <c:set var="product" value="${item.product}"/>
         <tr>
           <td>
-            <img class="product-tile" src="${item.product.imageUrl}">
+            <img class="product-tile" src="${product.imageUrl}">
           </td>
           <td>
-            <a href="${pageContext.servletContext.contextPath}/products/${item.product.id}">
-              ${item.product.description}
+            <a href="${contextPath}/products/${product.id}">
+              ${product.description}
             </a>
           </td>
           <td class="quantity">
             <fmt:formatNumber value="${item.quantity}" var="quantity"/>
 
-            <c:set var="error" value="${errors[item.product.id]}"/>
+            <c:set var="error" value="${errors[product.id]}"/>
 
             <input name="quantity" value="${not empty error ? paramValues['quantity'][status.index] : item.quantity}" class="quantity"/>
-            <input type="hidden" name="productId" value="${item.product.id}"/>
+            <input type="hidden" name="productId" value="${product.id}"/>
             <c:if test="${not empty error}">
               <div class="error">
-                  ${errors[item.product.id]}
+                  ${errors[product.id]}
               </div>
             </c:if>
           </td>
           <td class="price">
             <div>
-              <a href="#popup${item.product.id}">
-                <fmt:formatNumber value="${item.product.price}" type="currency" currencySymbol="${item.product.currency.symbol}"/>
+              <a href="#popup${product.id}">
+                <fmt:formatNumber value="${product.price}" type="currency" currencySymbol="${product.currency.symbol}"/>
               </a>
             </div>
-            <div id="popup${item.product.id}" class="overlay">
+            <div id="popup${product.id}" class="overlay">
               <div class="popup">
                 <h2>Price history</h2>
-                <h1>${item.product.description}</h1>
+                <h1>${product.description}</h1>
                 <a class="close" href="#">&times;</a>
                 <div class="content">
-                  <c:forEach var="history" items="${item.product.priceHistory}">
+                  <c:forEach var="history" items="${product.priceHistory}">
                     <p>${history.createdAt} - <fmt:formatNumber value="${history.price}" type="currency" currencySymbol="&#36"/></p>
                   </c:forEach>
                 </div>
@@ -62,7 +65,7 @@
           </td>
           <td>
             <button form="deleteCartItem"
-                    formaction="${pageContext.servletContext.contextPath}/cart/deleteCartItem/${item.product.id}">
+                    formaction="${contextPath}/cart/deleteCartItem/${product.id}">
               Delete
             </button>
           </td>
@@ -78,7 +81,9 @@
       </tr>
     </table>
     <p>
-      <button>Update</button>
+      <c:if test="${not empty cart.items}">
+        <button>Update</button>
+      </c:if>
     </p>
   </form>
   <form id="deleteCartItem" method="POST"></form>

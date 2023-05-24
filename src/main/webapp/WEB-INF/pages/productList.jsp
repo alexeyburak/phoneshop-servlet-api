@@ -5,6 +5,8 @@
 
 <jsp:useBean id="products" type="java.util.ArrayList" scope="request"/>
 <tags:master pageTitle="Product List">
+  <c:set var="contextPath" value="${pageContext.servletContext.contextPath}"/>
+
   <p>
     Welcome to Expert-Soft training!
   </p>
@@ -32,19 +34,22 @@
         </tr>
       </thead>
       <c:forEach var="product" items="${products}">
-        <form method="POST" action="${pageContext.servletContext.contextPath}/products">
+        <form method="POST" action="${contextPath}/products">
           <tr>
             <td>
               <img class="product-tile" src="${product.imageUrl}">
             </td>
             <td>
-              <a href="${pageContext.servletContext.contextPath}/products/${product.id}">
+              <a href="${contextPath}/products/${product.id}">
                 ${product.description}
               </a>
             </td>
             <td>
               <input name="quantity" value="${not empty error and param.productId eq product.id ? param.quantity : 1}">
               <input type="hidden" name="productId" value="${product.id}"/>
+              <input type="hidden" name="sort" value="${param.sort}"/>
+              <input type="hidden" name="order" value="${param.order}"/>
+              <input type="hidden" name="query" value="${param.query}"/>
               <c:if test="${not empty error && product.id == param.productId}">
                 <p class="error">
                     ${error}

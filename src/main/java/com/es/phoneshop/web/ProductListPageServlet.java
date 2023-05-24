@@ -6,10 +6,12 @@ import com.es.phoneshop.model.ProductSortCriteria;
 import com.es.phoneshop.model.enums.SortField;
 import com.es.phoneshop.model.enums.SortOrder;
 import com.es.phoneshop.service.CartService;
+import com.es.phoneshop.service.Parser;
 import com.es.phoneshop.service.ProductService;
 import com.es.phoneshop.service.RecentlyViewedProductsService;
 import com.es.phoneshop.service.impl.CartServiceImpl;
 import com.es.phoneshop.service.impl.ProductServiceImpl;
+import com.es.phoneshop.service.impl.QuantityParserImpl;
 import com.es.phoneshop.service.impl.RecentlyViewedProductsServiceImpl;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -24,25 +26,26 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import static com.es.phoneshop.web.constant.ServletConstant.Message.INVALID_NUMBER_FORMAT;
+import static com.es.phoneshop.web.constant.ServletConstant.Message.NEGATIVE_VALUE;
+import static com.es.phoneshop.web.constant.ServletConstant.Message.NOT_A_NUMBER;
+import static com.es.phoneshop.web.constant.ServletConstant.Message.NOT_IN_STOCK;
+import static com.es.phoneshop.web.constant.ServletConstant.REQUEST_DISPATCHER_PRODUCTS;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.ERROR;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.PRODUCTS;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.RECENTLY_VIEWED;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.ORDER;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.PRODUCT_ID;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.QUANTITY;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.QUERY;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.SORT;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class ProductListPageServlet extends HttpServlet {
-    private static final String REQUEST_ATTRIBUTE_PRODUCTS = "products";
-    private static final String REQUEST_PARAMETER_QUANTITY = "quantity";
-    private static final String REQUEST_PARAMETER_PRODUCT_ID = "productId";
-    private static final String REQUEST_ATTRIBUTE_RECENTLY_VIEWED = "recentlyViewed";
-    private static final String REQUEST_DISPATCHER_PRODUCTS = "/WEB-INF/pages/productList.jsp";
-    private static final String REQUEST_PARAM_QUERY = "query";
-    private static final String REQUEST_PARAM_SORT = "sort";
-    private static final String REQUEST_ATTRIBUTE_ERROR = "error";
-    private static final String REQUEST_PARAM_ORDER = "order";
-    private static final String MESSAGE_NOT_A_NUMBER = "Not a number";
-    private static final String MESSAGE_INVALID_NUMBER_FORMAT = "Invalid number format";
-    private static final String MESSAGE_NOT_IN_STOCK = "Not available in stock";
-    private static final String MESSAGE_NEGATIVE_VALUE = "Negative value";
     private ProductService productService;
     private CartService cartService;
     private RecentlyViewedProductsService recentlyViewedService;
+    private Parser<Integer> quantityParser;
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -50,36 +53,47 @@ public class ProductListPageServlet extends HttpServlet {
         productService = ProductServiceImpl.getInstance();
         cartService = CartServiceImpl.getInstance();
         recentlyViewedService = RecentlyViewedProductsServiceImpl.getInstance();
+        quantityParser = QuantityParserImpl.getInstance();
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String query = Optional.ofNullable(request.getParameter(REQUEST_PARAM_QUERY))
-                .orElse(EMPTY);
-        ProductSortCriteria sortCriteria = getSortCriteria(request);
+        String query = parseQuery(request);
+        ProductSortCriteria sortCriteria = parseSortCriteria(request);
 
-        request.setAttribute(REQUEST_ATTRIBUTE_PRODUCTS, productService.findProducts(query, sortCriteria));
-        request.setAttribute(REQUEST_ATTRIBUTE_RECENTLY_VIEWED, recentlyViewedService.get(request.getSession()).getProducts());
+        request.setAttribute(PRODUCTS, productService.findProducts(query, sortCriteria));
+        request.setAttribute(RECENTLY_VIEWED, recentlyViewedService.get(request.getSession()).getProducts());
         request.getRequestDispatcher(REQUEST_DISPATCHER_PRODUCTS).forward(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        UUID id = UUID.fromString(request.getParameter(REQUEST_PARAMETER_PRODUCT_ID));
+        UUID id = UUID.fromString(request.getParameter(PRODUCT_ID));
 
         if (isProductAddedToCart(request, response, id)) {
-            response.sendRedirect(request.getContextPath() + "/products?message=Product added to cart");
+            String location = getLocationForRedirect(request);
+            response.sendRedirect(location);
         }
     }
 
-    private ProductSortCriteria getSortCriteria(HttpServletRequest request) {
-        String sortField = request.getParameter(REQUEST_PARAM_SORT);
-        String sortOrder = request.getParameter(REQUEST_PARAM_ORDER);
+    private static String parseQuery(HttpServletRequest request) {
+        return Optional.ofNullable(request.getParameter(QUERY))
+                .orElse(EMPTY);
+    }
 
-        return sortField != null && sortOrder != null ? ProductSortCriteria.builder()
+    private ProductSortCriteria parseSortCriteria(HttpServletRequest request) {
+        String sortField = request.getParameter(SORT);
+        String sortOrder = request.getParameter(ORDER);
+
+        return isValidSortCriteria(sortField, sortOrder) ? ProductSortCriteria.builder()
                 .sortField(SortField.valueOf(sortField))
                 .sortOrder(SortOrder.valueOf(sortOrder))
                 .build() : null;
+    }
+
+    private boolean isValidSortCriteria(String sortField, String sortOrder) {
+        return sortField != null && sortOrder != null &&
+                !sortField.isEmpty() && !sortOrder.isEmpty();
     }
 
     private boolean isProductAddedToCart(HttpServletRequest request, HttpServletResponse response, UUID id)
@@ -87,12 +101,12 @@ public class ProductListPageServlet extends HttpServlet {
         int quantity;
 
         try {
-            quantity = parseQuantity(request);
+            quantity = quantityParser.parse(request.getParameter(QUANTITY), request.getLocale());
         } catch (ParseException e) {
-            handleErrorAndForward(request, response, MESSAGE_NOT_A_NUMBER);
+            handleErrorAndForward(request, response, NOT_A_NUMBER);
             return false;
         } catch (NumberFormatException e) {
-            handleErrorAndForward(request, response, MESSAGE_INVALID_NUMBER_FORMAT);
+            handleErrorAndForward(request, response, INVALID_NUMBER_FORMAT);
             return false;
         }
 
@@ -100,34 +114,47 @@ public class ProductListPageServlet extends HttpServlet {
         try {
             cartService.add(cart, id, quantity);
         } catch (OutOfStockException e) {
-            handleErrorAndForward(request, response, MESSAGE_NOT_IN_STOCK);
+            handleErrorAndForward(request, response, NOT_IN_STOCK);
             return false;
         } catch (IllegalArgumentException e) {
-            handleErrorAndForward(request, response, MESSAGE_NEGATIVE_VALUE);
+            handleErrorAndForward(request, response, NEGATIVE_VALUE);
             return false;
         }
         return true;
     }
 
-    private int parseQuantity(HttpServletRequest request) throws ParseException, NumberFormatException {
-        NumberFormat format = NumberFormat.getInstance(request.getLocale());
-        String quantity = request.getParameter(REQUEST_PARAMETER_QUANTITY);
-
-        validateInteger(quantity);
-        return format.parse(quantity).intValue();
+    private void handleErrorAndForward(HttpServletRequest request, HttpServletResponse response, String message)
+            throws ServletException, IOException {
+        request.setAttribute(ERROR, message);
+        doGet(request, response);
     }
 
-    private void validateInteger(String value) {
-        String DIGIT_REGEX = "^\\d+$";
-        if (!Pattern.matches(DIGIT_REGEX, value)) {
-            throw new NumberFormatException();
+    private String getLocationForRedirect(HttpServletRequest request) {
+        Optional<ProductSortCriteria> sortCriteria = Optional.ofNullable(parseSortCriteria(request));
+        String query = parseQuery(request);
+        StringBuilder builder = new StringBuilder(request.getContextPath() +
+                "/products?message=Product added to cart");
+
+        appendQueryIfPresent(builder, query);
+        sortCriteria.ifPresent(criteria ->
+                appendSortCriteria(builder, criteria)
+        );
+
+        return builder.toString();
+    }
+
+    private void appendQueryIfPresent(StringBuilder builder, String query) {
+        if (!query.isEmpty()) {
+            builder.append("&query=")
+                    .append(query);
         }
     }
 
-    private void handleErrorAndForward(HttpServletRequest request, HttpServletResponse response, String message)
-            throws ServletException, IOException {
-        request.setAttribute(REQUEST_ATTRIBUTE_ERROR, message);
-        doGet(request, response);
+    private void appendSortCriteria(StringBuilder builder, ProductSortCriteria criteria) {
+        builder.append("&sort=")
+                .append(criteria.getSortField())
+                .append("&order=")
+                .append(criteria.getSortOrder());
     }
 
 }

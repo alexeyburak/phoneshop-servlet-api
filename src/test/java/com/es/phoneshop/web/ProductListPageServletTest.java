@@ -9,6 +9,7 @@ import com.es.phoneshop.service.CartService;
 import com.es.phoneshop.service.ProductService;
 import com.es.phoneshop.service.RecentlyViewedProductsService;
 import com.es.phoneshop.service.impl.ProductServiceImpl;
+import com.es.phoneshop.service.impl.QuantityParserImpl;
 import com.es.phoneshop.service.impl.RecentlyViewedProductsServiceImpl;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConfig;
@@ -27,9 +28,19 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.ParseException;
 import java.util.Locale;
 import java.util.UUID;
 
+import static com.es.phoneshop.web.constant.ServletConstant.Message.INVALID_NUMBER_FORMAT;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.ERROR;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.PRODUCTS;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.RECENTLY_VIEWED;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.ORDER;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.PRODUCT_ID;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.QUANTITY;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.QUERY;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.SORT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,6 +65,8 @@ public class ProductListPageServletTest {
     private HttpSession httpSession;
     @Mock
     private CartService cartService;
+    @Mock
+    private QuantityParserImpl quantityParser;
     @Mock
     private RecentlyViewedProductsService recentlyViewedProductsService;
     @InjectMocks
@@ -93,16 +106,16 @@ public class ProductListPageServletTest {
 
         // then
         verify(requestDispatcher).forward(request, response);
-        verify(request).setAttribute(eq("products"), any());
-        verify(request).setAttribute(eq("recentlyViewed"), any());
+        verify(request).setAttribute(eq(PRODUCTS), any());
+        verify(request).setAttribute(eq(RECENTLY_VIEWED), any());
     }
 
     @Test
-    public void getSortCriteria_ValidParameters_ShouldReturnProductSortCriteriaObject() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public void parseSortCriteria_ValidParameters_ShouldReturnProductSortCriteriaObject() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         // given
-        when(request.getParameter("sort")).thenReturn("price");
-        when(request.getParameter("order")).thenReturn("asc");
-        Method getSortCriteriaMethod = ProductListPageServlet.class.getDeclaredMethod("getSortCriteria", HttpServletRequest.class);
+        when(request.getParameter(SORT)).thenReturn("price");
+        when(request.getParameter(ORDER)).thenReturn("asc");
+        Method getSortCriteriaMethod = ProductListPageServlet.class.getDeclaredMethod("parseSortCriteria", HttpServletRequest.class);
         getSortCriteriaMethod.setAccessible(true);
 
         // when
@@ -114,11 +127,11 @@ public class ProductListPageServletTest {
     }
 
     @Test
-    public void getSortCriteria_NullParameters_ShouldReturnNull() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public void parseSortCriteria_NullParameters_ShouldReturnNull() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         // given
-        when(request.getParameter("sort")).thenReturn(null);
-        when(request.getParameter("order")).thenReturn(null);
-        Method getSortCriteriaMethod = ProductListPageServlet.class.getDeclaredMethod("getSortCriteria", HttpServletRequest.class);
+        when(request.getParameter(SORT)).thenReturn(null);
+        when(request.getParameter(ORDER)).thenReturn(null);
+        Method getSortCriteriaMethod = ProductListPageServlet.class.getDeclaredMethod("parseSortCriteria", HttpServletRequest.class);
         getSortCriteriaMethod.setAccessible(true);
 
         // when
@@ -129,49 +142,101 @@ public class ProductListPageServletTest {
     }
 
     @Test
-    public void doPost_ValidParameters_ShouldRedirectToSuccessPage() throws ServletException, IOException {
+    public void doPost_ValidParameters_ShouldRedirectToSuccessPageWithSorting() throws ServletException, IOException {
         // given
         final Cart cart = new Cart();
         final UUID id = UUID.randomUUID();
-        when(request.getParameter("productId")).thenReturn(id.toString());
-        when(request.getParameter("quantity")).thenReturn("2");
+        final SortField sort = SortField.price;
+        final SortOrder order = SortOrder.asc;
+        when(request.getParameter(SORT)).thenReturn(sort.toString());
+        when(request.getParameter(ORDER)).thenReturn(order.toString());
+        when(request.getParameter(PRODUCT_ID)).thenReturn(id.toString());
+        when(request.getParameter(QUANTITY)).thenReturn("2");
         when(cartService.get(httpSession)).thenReturn(cart);
 
         // when
         servlet.doPost(request, response);
 
         // then
-        verify(response).sendRedirect(request.getContextPath() + "/products?message=Product added to cart");
+        verify(response).sendRedirect(request.getContextPath() +
+                "/products?message=Product added to cart&sort=" + sort +
+                "&order=" + order);
     }
 
     @Test
-    public void doPost_NegativeQuantity_ShouldRedirectToErrorPage() throws ServletException, IOException {
+    public void doPost_ValidParameters_ShouldRedirectToSuccessPageWithQuery() throws ServletException, IOException {
         // given
         final Cart cart = new Cart();
         final UUID id = UUID.randomUUID();
-        when(request.getParameter("productId")).thenReturn(id.toString());
-        when(request.getParameter("quantity")).thenReturn("-22");
+        final String query = "sam iii";
+        when(request.getParameter(QUERY)).thenReturn(query);
+        when(request.getParameter(ORDER)).thenReturn(null);
+        when(request.getParameter(PRODUCT_ID)).thenReturn(id.toString());
+        when(request.getParameter(QUANTITY)).thenReturn("2");
+        when(cartService.get(httpSession)).thenReturn(cart);
+
+        // when
+        servlet.doPost(request, response);
+
+        // then
+        verify(response).sendRedirect(request.getContextPath() +
+                "/products?message=Product added to cart&query=" + query);
+    }
+
+    @Test
+    public void doPost_ValidParameters_ShouldRedirectToSuccessPage() throws ServletException, IOException {
+        // given
+        final Cart cart = new Cart();
+        final UUID id = UUID.randomUUID();
+        when(request.getParameter(SORT)).thenReturn(null);
+        when(request.getParameter(ORDER)).thenReturn(null);
+        when(request.getParameter(PRODUCT_ID)).thenReturn(id.toString());
+        when(request.getParameter(QUANTITY)).thenReturn("2");
+        when(cartService.get(httpSession)).thenReturn(cart);
+
+        // when
+        servlet.doPost(request, response);
+
+        // then
+        verify(response).sendRedirect(request.getContextPath() +
+                "/products?message=Product added to cart");
+    }
+
+    @Test
+    public void doPost_NegativeQuantity_ShouldRedirectToErrorPage() throws ServletException, IOException, ParseException {
+        // given
+        final UUID id = UUID.randomUUID();
+        final String quantity = "-22";
+        when(request.getParameter(PRODUCT_ID)).thenReturn(id.toString());
+        when(request.getParameter(QUANTITY)).thenReturn(quantity);
+        when(quantityParser.parse(eq(quantity), any(Locale.class)))
+                .thenThrow(NumberFormatException.class);
 
         // when
         servlet.doPost(request, response);
 
         // then
         verify(requestDispatcher).forward(request, response);
+        verify(request).setAttribute(eq(ERROR), eq(INVALID_NUMBER_FORMAT));
         verify(response, never()).sendRedirect(request.getContextPath() + "/products?message=Product added to cart");
     }
 
     @Test
-    public void doPost_InvalidFormatQuantity_ShouldRedirectToErrorPage() throws ServletException, IOException {
+    public void doPost_InvalidFormatQuantity_ShouldRedirectToErrorPage() throws ServletException, IOException, ParseException {
         // given
         final UUID id = UUID.randomUUID();
-        when(request.getParameter("productId")).thenReturn(id.toString());
-        when(request.getParameter("quantity")).thenReturn("wasd");
+        final String quantity = "wasd";
+        when(request.getParameter(PRODUCT_ID)).thenReturn(id.toString());
+        when(request.getParameter(QUANTITY)).thenReturn(quantity);
+        when(quantityParser.parse(eq(quantity), any(Locale.class)))
+                .thenThrow(NumberFormatException.class);
 
         // when
         servlet.doPost(request, response);
 
         // then
         verify(requestDispatcher).forward(request, response);
+        verify(request).setAttribute(eq(ERROR), eq(INVALID_NUMBER_FORMAT));
         verify(response, never()).sendRedirect(request.getContextPath() + "/products?message=Product added to cart");
     }
 
