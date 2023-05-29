@@ -9,6 +9,7 @@ import com.es.phoneshop.service.ProductService;
 import com.es.phoneshop.service.RecentlyViewedProductsService;
 import com.es.phoneshop.service.impl.CartServiceImpl;
 import com.es.phoneshop.service.impl.ProductServiceImpl;
+import com.es.phoneshop.service.impl.QuantityParserImpl;
 import com.es.phoneshop.service.impl.RecentlyViewedProductsServiceImpl;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConfig;
@@ -24,9 +25,14 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.text.ParseException;
 import java.util.Locale;
 import java.util.UUID;
 
+import static com.es.phoneshop.web.constant.ServletConstant.Message.INVALID_NUMBER_FORMAT;
+import static com.es.phoneshop.web.constant.ServletConstant.Message.NOT_IN_STOCK;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.ERROR;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.QUANTITY;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -49,6 +55,8 @@ public class ProductDetailsPageServletTest {
     private ProductService productService;
     @Mock
     private CartService cartService;
+    @Mock
+    private QuantityParserImpl quantityParser;
     @Mock
     private RecentlyViewedProductsService recentlyViewedProductsService;
     @InjectMocks
@@ -113,7 +121,8 @@ public class ProductDetailsPageServletTest {
     }
 
     @Test
-    public void doPost_ValidQuantity_ShouldAddProductToCart() throws ServletException, IOException, OutOfStockException {
+    public void doPost_ValidQuantity_ShouldAddProductToCart() throws ServletException, IOException,
+            OutOfStockException, ParseException {
         // given
         final UUID productId = UUID.randomUUID();
         final int quantity = 5;
@@ -121,7 +130,9 @@ public class ProductDetailsPageServletTest {
         String redirectLink = request.getContextPath() + "/products/" + productId + "?message=Product added to cart";
         when(request.getPathInfo()).thenReturn("/" + productId);
         when(cartService.get(any())).thenReturn(cart);
-        when(request.getParameter("quantity")).thenReturn(String.valueOf(quantity));
+        when(request.getParameter(QUANTITY)).thenReturn(String.valueOf(quantity));
+        when(quantityParser.parse(eq(String.valueOf(quantity)), any(Locale.class)))
+                .thenReturn(quantity);
 
         // when
         servlet.doPost(request, response);
@@ -129,41 +140,48 @@ public class ProductDetailsPageServletTest {
         // then
         verify(cartService).add(cart, productId, quantity);
         verify(response).sendRedirect(redirectLink);
-        verify(request, never()).setAttribute(eq("error"), any());
+        verify(request, never()).setAttribute(eq(ERROR), any());
     }
 
     @Test
-    public void doPost_InvalidQuantityFormat_ShouldCatchExceptionAndShowErrorMessage() throws ServletException, IOException {
+    public void doPost_InvalidQuantityFormat_ShouldCatchExceptionAndShowErrorMessage() throws ServletException, IOException,
+            ParseException {
         // given
         final UUID productId = UUID.randomUUID();
+        final String quantity = "qwerty";
         when(request.getPathInfo()).thenReturn("/" + productId);
-        when(request.getParameter("quantity")).thenReturn("qwerty");
+        when(request.getParameter(QUANTITY)).thenReturn(quantity);
+        when(quantityParser.parse(eq(quantity), any(Locale.class)))
+                .thenThrow(NumberFormatException.class);
 
         // when
         servlet.doPost(request, response);
 
         // then
-        verify(response, never()).sendRedirect(anyString());
-        verify(request).setAttribute("error", "Not a number");
+        verify(request).setAttribute(eq(ERROR), eq(INVALID_NUMBER_FORMAT));
     }
 
     @Test
-    public void doPost_InvalidStock_ShouldCatchExceptionAndShowErrorMessage() throws ServletException, IOException, OutOfStockException {
+    public void doPost_InvalidStock_ShouldCatchExceptionAndShowErrorMessage() throws ServletException, IOException,
+            OutOfStockException, ParseException {
         // given
         final UUID productId = UUID.randomUUID();
         final int quantity = 500;
         final Cart cart = new Cart();
         when(request.getPathInfo()).thenReturn("/" + productId);
         when(cartService.get(any())).thenReturn(cart);
-        when(request.getParameter("quantity")).thenReturn(String.valueOf(quantity));
+        when(quantityParser.parse(eq(String.valueOf(quantity)), any(Locale.class)))
+                .thenReturn(quantity);
+        when(request.getParameter(eq(QUANTITY))).thenReturn(String.valueOf(quantity));
         doThrow(OutOfStockException.class).when(cartService).add(cart, productId, quantity);
 
         // when
         servlet.doPost(request, response);
 
         // then
+        verify(requestDispatcher).forward(request, response);
         verify(response, never()).sendRedirect(anyString());
-        verify(request).setAttribute("error", "Not available in stock");
+        verify(request).setAttribute(eq(ERROR), eq(NOT_IN_STOCK));
     }
 
 }

@@ -4,10 +4,12 @@ import com.es.phoneshop.exception.OutOfStockException;
 import com.es.phoneshop.model.Cart;
 import com.es.phoneshop.model.RecentlyViewedProductUnit;
 import com.es.phoneshop.service.CartService;
+import com.es.phoneshop.service.Parser;
 import com.es.phoneshop.service.ProductService;
 import com.es.phoneshop.service.RecentlyViewedProductsService;
 import com.es.phoneshop.service.impl.CartServiceImpl;
 import com.es.phoneshop.service.impl.ProductServiceImpl;
+import com.es.phoneshop.service.impl.QuantityParserImpl;
 import com.es.phoneshop.service.impl.RecentlyViewedProductsServiceImpl;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -20,19 +22,24 @@ import java.io.IOException;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.UUID;
+import java.util.regex.Pattern;
+
+import static com.es.phoneshop.web.constant.ServletConstant.Message.INVALID_NUMBER_FORMAT;
+import static com.es.phoneshop.web.constant.ServletConstant.Message.NEGATIVE_VALUE;
+import static com.es.phoneshop.web.constant.ServletConstant.Message.NOT_A_NUMBER;
+import static com.es.phoneshop.web.constant.ServletConstant.Message.NOT_IN_STOCK;
+import static com.es.phoneshop.web.constant.ServletConstant.REQUEST_DISPATCHER_PRODUCT;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.CART;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.ERROR;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.PRODUCT;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.RECENTLY_VIEWED;
+import static com.es.phoneshop.web.constant.ServletConstant.RequestParameter.QUANTITY;
 
 public class ProductDetailsPageServlet extends HttpServlet {
-    private static final String REQUEST_ATTRIBUTE_PRODUCT = "product";
-    private static final String REQUEST_ATTRIBUTE_CART = "cart";
-    private static final String REQUEST_ATTRIBUTE_ERROR = "error";
-    private static final String REQUEST_ATTRIBUTE_RECENTLY_VIEWED = "recentlyViewed";
-    private static final String REQUEST_PARAMETER_QUANTITY = "quantity";
-    private static final String REQUEST_DISPATCHER_PRODUCT = "/WEB-INF/pages/product.jsp";
-    private static final String MESSAGE_NOT_A_NUMBER = "Not a number";
-    private static final String MESSAGE_NOT_IN_STOCK = "Not available in stock";
     private ProductService productService;
     private CartService cartService;
     private RecentlyViewedProductsService recentlyViewedService;
+    private Parser<Integer> quantityParser;
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -40,6 +47,7 @@ public class ProductDetailsPageServlet extends HttpServlet {
         productService = ProductServiceImpl.getInstance();
         cartService = CartServiceImpl.getInstance();
         recentlyViewedService = RecentlyViewedProductsServiceImpl.getInstance();
+        quantityParser = QuantityParserImpl.getInstance();
     }
 
     @Override
@@ -50,9 +58,9 @@ public class ProductDetailsPageServlet extends HttpServlet {
 
         recentlyViewedService.add(id, productUnit);
 
-        request.setAttribute(REQUEST_ATTRIBUTE_PRODUCT, productService.getProduct(id));
-        request.setAttribute(REQUEST_ATTRIBUTE_CART, cartService.get(session));
-        request.setAttribute(REQUEST_ATTRIBUTE_RECENTLY_VIEWED, productUnit.getProducts());
+        request.setAttribute(PRODUCT, productService.getProduct(id));
+        request.setAttribute(CART, cartService.get(session));
+        request.setAttribute(RECENTLY_VIEWED, productUnit.getProducts());
         request.getRequestDispatcher(REQUEST_DISPATCHER_PRODUCT).forward(request, response);
     }
 
@@ -74,9 +82,12 @@ public class ProductDetailsPageServlet extends HttpServlet {
         int quantity;
 
         try {
-            quantity = parseQuantity(request);
+            quantity = quantityParser.parse(request.getParameter(QUANTITY), request.getLocale());
         } catch (ParseException e) {
-            handleErrorAndForward(request, response, MESSAGE_NOT_A_NUMBER);
+            handleErrorAndForward(request, response, NOT_A_NUMBER);
+            return false;
+        } catch (NumberFormatException e) {
+            handleErrorAndForward(request, response, INVALID_NUMBER_FORMAT);
             return false;
         }
 
@@ -84,20 +95,18 @@ public class ProductDetailsPageServlet extends HttpServlet {
         try {
             cartService.add(cart, id, quantity);
         } catch (OutOfStockException e) {
-            handleErrorAndForward(request, response, MESSAGE_NOT_IN_STOCK);
+            handleErrorAndForward(request, response, NOT_IN_STOCK);
+            return false;
+        } catch (IllegalArgumentException e) {
+            handleErrorAndForward(request, response, NEGATIVE_VALUE);
             return false;
         }
         return true;
     }
 
-    private int parseQuantity(HttpServletRequest request) throws ParseException {
-        NumberFormat format = NumberFormat.getInstance(request.getLocale());
-        return format.parse(request.getParameter(REQUEST_PARAMETER_QUANTITY)).intValue();
-    }
-
     private void handleErrorAndForward(HttpServletRequest request, HttpServletResponse response, String message)
             throws ServletException, IOException {
-        request.setAttribute(REQUEST_ATTRIBUTE_ERROR, message);
+        request.setAttribute(ERROR, message);
         doGet(request, response);
     }
 
