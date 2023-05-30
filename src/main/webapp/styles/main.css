@@ -91,7 +91,7 @@ body.product-list {
   color: green;
 }
 
-.error {
+.error, .required {
   color: red;
 }
 

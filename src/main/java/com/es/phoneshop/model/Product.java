@@ -16,11 +16,10 @@ import java.util.UUID;
 @NoArgsConstructor
 @Getter
 @Setter
-public class Product implements Serializable {
+public class Product extends Entity implements Serializable {
     @Serial
     private static final long serialVersionUID = 1681378563898422491L;
 
-    private UUID id;
     private String code;
     private String description;
     /** null means there is no price because the product is outdated or new */

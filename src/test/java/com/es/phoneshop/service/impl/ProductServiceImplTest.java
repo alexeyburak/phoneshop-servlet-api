@@ -54,13 +54,13 @@ public class ProductServiceImplTest {
         // given
         final Product expectedProduct = new Product(UUID.randomUUID(), "sgs2", "Samsung Galaxy S II", new BigDecimal(200), usd, 0, "https://..");
         final UUID id = expectedProduct.getId();
-        when(productDao.getProduct(id)).thenReturn(Optional.of(expectedProduct));
+        when(productDao.get(id)).thenReturn(Optional.of(expectedProduct));
 
         // when
         Product result = productService.getProduct(id);
 
         // then
-        verify(productDao, times(1)).getProduct(id);
+        verify(productDao, times(1)).get(id);
         assertEquals(expectedProduct, result);
     }
 

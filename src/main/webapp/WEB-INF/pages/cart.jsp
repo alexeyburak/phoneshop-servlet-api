@@ -83,8 +83,10 @@
     <p>
       <c:if test="${not empty cart.items}">
         <button>Update</button>
+        <button formaction="${contextPath}/checkout" form="checkoutOrder">Checkout</button>
       </c:if>
     </p>
   </form>
   <form id="deleteCartItem" method="POST"></form>
+  <form id="checkoutOrder" method="GET"></form>
 </tags:master>
