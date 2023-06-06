@@ -98,6 +98,19 @@ public class CartServiceImpl implements CartService {
         }
     }
 
+    @Override
+    public void clear(HttpSession session) {
+        Cart cart = this.get(session);
+        String sessionId = session.getId();
+
+        synchronized (sessionId.intern()) {
+            cart.getItems().clear();
+
+            LOGGER.debug("Clear cart. Session id: {}", sessionId);
+            recalculateCart(cart);
+        }
+    }
+
     private void recalculateCart(Cart cart) {
         List<CartItem> items = cart.getItems();
 

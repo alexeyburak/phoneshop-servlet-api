@@ -18,6 +18,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.io.IOException;
 import java.lang.reflect.Field;
 
+import static com.es.phoneshop.web.constant.ServletConstant.RequestAttribute.CART;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -69,7 +70,7 @@ public class MiniCartServletTest {
 
         // then
         verify(requestDispatcher).include(request, response);
-        verify(request).setAttribute(eq("cart"), any());
+        verify(request).setAttribute(eq(CART), any());
     }
 
 }

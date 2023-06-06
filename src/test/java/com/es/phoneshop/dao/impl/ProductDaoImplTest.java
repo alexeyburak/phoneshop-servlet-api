@@ -56,11 +56,27 @@ public class ProductDaoImplTest {
         constructor.setAccessible(true);
         productDao = constructor.newInstance();
 
-        Field productsField = ProductDaoImpl.class.getDeclaredField("products");
+        Field productsField = AbstractGenericDao.class.getDeclaredField("items");
         productsField.setAccessible(true);
         productsField.set(productDao, products);
 
         return productDao;
+    }
+
+    @Test
+    public void getInstance_ShouldCreateAndReturnOneSameInstance() {
+        // given
+        ProductDaoImpl instance1;
+        ProductDaoImpl instance2;
+
+        // when
+        instance1 = ProductDaoImpl.getInstance();
+        instance2 = ProductDaoImpl.getInstance();
+
+        // then
+        assertNotNull(instance1);
+        assertNotNull(instance2);
+        assertEquals(instance1, instance2);
     }
 
     @Test
@@ -70,7 +86,7 @@ public class ProductDaoImplTest {
         final UUID id = product.getId();
 
         // when
-        Product result = productDao.getProduct(id).get();
+        Product result = productDao.get(id).get();
 
         // then
         assertNotNull(result);
@@ -117,6 +133,17 @@ public class ProductDaoImplTest {
         // then
         assertEquals(expectedSize, products.size());
         assertTrue(products.contains(productToSave));
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void save_NullProduct_ShouldThrowNullPointerException() {
+        // given
+        final Product productToSave = null;
+
+        // when
+        productDao.save(productToSave);
+
+        // then (exception is thrown)
     }
 
     @Test

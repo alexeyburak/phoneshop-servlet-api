@@ -34,7 +34,7 @@ public class ProductServiceImpl implements ProductService {
     public Product getProduct(@NonNull UUID id) {
         LOGGER.debug("Getting product. Id: {}", id);
 
-        return productDao.getProduct(id)
+        return productDao.get(id)
                 .orElseThrow(ProductNotFoundException::new);
     }
 

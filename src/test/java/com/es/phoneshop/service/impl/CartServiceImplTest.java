@@ -218,6 +218,20 @@ public class CartServiceImplTest {
     }
 
     @Test
+    public void clear_ValidSession_ShouldClearCart() {
+        // given
+        final Cart cart = new Cart();
+        cart.getItems().add(new CartItem(product, 2));
+        when(session.getAttribute(any())).thenReturn(cart);
+
+        // when
+        cartService.clear(session);
+
+        // then
+        assertEquals(0, cart.getItems().size());
+    }
+
+    @Test
     public void recalculateCart_ExistingCart_ShouldRecalculateCartAfterDeleteOperation() {
         // given
         final Cart cart = new Cart();
