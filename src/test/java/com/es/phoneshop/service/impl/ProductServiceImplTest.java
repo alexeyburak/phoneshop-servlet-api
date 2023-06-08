@@ -1,9 +1,11 @@
 package com.es.phoneshop.service.impl;
 
 import com.es.phoneshop.dao.ProductDao;
+import com.es.phoneshop.model.ProductSearchCriteria;
 import com.es.phoneshop.model.ProductSortCriteria;
 import com.es.phoneshop.exception.ProductNotFoundException;
 import com.es.phoneshop.model.Product;
+import com.es.phoneshop.model.enums.SearchMethod;
 import com.es.phoneshop.service.ProductService;
 import org.junit.Before;
 import org.junit.Test;
@@ -84,7 +86,24 @@ public class ProductServiceImplTest {
     }
 
     @Test
-    public void findProducts_ShouldReturnProductListFromDao() {
+    public void findProducts_WithoutParameters_ShouldReturnProductListFromDao() {
+        // given
+        List<Product> expectedProducts = Arrays.asList(
+                new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, 100, "https://..", null),
+                new Product("sgs2", "Samsung Galaxy S II", new BigDecimal(150), usd, 100, "https://..", null)
+        );
+        when(productDao.findProducts()).thenReturn(expectedProducts);
+
+        // when
+        List<Product> result = productService.findProducts();
+
+        // then
+        verify(productDao, times(1)).findProducts();
+        assertEquals(expectedProducts, result);
+    }
+
+    @Test
+    public void findProducts_WithSortCriteria_ShouldReturnProductListFromDao() {
         // given
         List<Product> expectedProducts = Arrays.asList(
                 new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, 100, "https://..", null),
@@ -151,6 +170,20 @@ public class ProductServiceImplTest {
         // then
         assertTrue(result.stream()
                 .noneMatch(product -> product.getPrice() == null));
+    }
+
+    @Test
+    public void findProducts_WithSearchCriteria_ShouldReturnProductListFromDao() {
+        // given
+        final long expectedProductPrice = 420L;
+        final ProductSearchCriteria criteria = new ProductSearchCriteria(BigDecimal.valueOf(expectedProductPrice),
+                BigDecimal.valueOf(expectedProductPrice), SearchMethod.ANY_WORD);
+
+        // when
+        productService.findProducts(query, criteria);
+
+        // then
+        verify(productDao, times(1)).findProducts(query, criteria);
     }
 
     @Test

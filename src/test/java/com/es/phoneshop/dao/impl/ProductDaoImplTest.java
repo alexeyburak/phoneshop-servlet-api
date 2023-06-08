@@ -1,8 +1,10 @@
 package com.es.phoneshop.dao.impl;
 
 import com.es.phoneshop.dao.ProductDao;
+import com.es.phoneshop.model.ProductSearchCriteria;
 import com.es.phoneshop.model.ProductSortCriteria;
 import com.es.phoneshop.model.Product;
+import com.es.phoneshop.model.enums.SearchMethod;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
@@ -94,6 +96,19 @@ public class ProductDaoImplTest {
     }
 
     @Test
+    public void findProducts_WithNoCriteria_ShouldReturnProductListFromDao() {
+        // given
+        final List<Product> productList;
+
+        // when
+        productList = productDao.findProducts();
+
+        // then
+        assertNotNull(productList);
+        assertFalse(productList.isEmpty());
+    }
+
+    @Test
     public void findProducts_NullParameters_ShouldReturnProductListFromDao() {
         // given
         final List<Product> productList;
@@ -110,7 +125,8 @@ public class ProductDaoImplTest {
     public void findProducts_QueryParameters_ShouldReturnProductListFromDaoWithSearchedQuery() {
         // given
         final String query = "samsung iii";
-        final Product expectedProduct = new Product("sgs3", "Samsung Galaxy S III", new BigDecimal(300), usd, 5, "https://..", null);
+        final Product expectedProduct = new Product("sgs3", "Samsung Galaxy S III",
+                new BigDecimal(300), usd, 5, "https://..", null);
 
         // when
         Product result = productDao.findProducts(query, productSort).get(0);
@@ -121,9 +137,27 @@ public class ProductDaoImplTest {
     }
 
     @Test
+    public void findProducts_SearchCriteria_ShouldReturnProductListFromDaoWithSearchCriteria() {
+        // given
+        final long expectedProductPrice = 420L;
+        final ProductSearchCriteria criteria = new ProductSearchCriteria(BigDecimal.valueOf(expectedProductPrice),
+                BigDecimal.valueOf(expectedProductPrice), SearchMethod.ANY_WORD);
+        final Product expectedProduct = new Product(UUID.randomUUID(), "sec901", "Sony Ericsson C901",
+                new BigDecimal(expectedProductPrice), usd, 30, "https://..");
+
+        // when
+        Product result = productDao.findProducts(query, criteria).get(0);
+
+        // then
+        assertNotNull(result);
+        assertEquals(expectedProduct.getDescription(), result.getDescription());
+    }
+
+    @Test
     public void save_NotNullProduct_ShouldAddProductToDao() {
         // given
-        final Product productToSave = new Product("simsxg75", "Siemens SXG75", new BigDecimal(150), usd, 40, "https://..", null);
+        final Product productToSave = new Product("simsxg75", "Siemens SXG75",
+                new BigDecimal(150), usd, 40, "https://..", null);
         final int expectedSize = productDao.findProducts(query, productSort).size() + 1;
 
         // when

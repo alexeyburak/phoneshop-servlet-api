@@ -10,9 +10,12 @@
   <p>
     Welcome to Expert-Soft training!
   </p>
-  <form>
+  <form method="GET">
     <input name="query" type="text" value="${param.query}" placeholder="Search product">
     <button>Search</button>
+  </form>
+  <form method="GET" action="${contextPath}/advancedSearch">
+    <button>Advanced search</button>
   </form>
   <tags:successAndErrorMesages errorMessage="There was an error while adding to the cart" successMessage="${param.message}"/>
     <table>
@@ -56,25 +59,7 @@
                 </p>
               </c:if>
             </td>
-            <td class="price">
-              <div>
-                <a href="#popup${product.id}">
-                  <fmt:formatNumber value="${product.price}" type="currency" currencySymbol="${product.currency.symbol}"/>
-                </a>
-              </div>
-              <div id="popup${product.id}" class="overlay">
-                <div class="popup">
-                  <h2>Price history</h2>
-                  <h1>${product.description}</h1>
-                  <a class="close" href="#">&times;</a>
-                  <div class="content">
-                    <c:forEach var="history" items="${product.priceHistory}">
-                      <p>${history.createdAt} - <fmt:formatNumber value="${history.price}" type="currency" currencySymbol="&#36"/></p>
-                    </c:forEach>
-                  </div>
-                </div>
-              </div>
-            </td>
+            <tags:productPriceWithPopup product="${product}"/>
             <td>
               <button>
                 Add to cart

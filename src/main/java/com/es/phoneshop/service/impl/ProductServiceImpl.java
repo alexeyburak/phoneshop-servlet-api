@@ -2,6 +2,7 @@ package com.es.phoneshop.service.impl;
 
 import com.es.phoneshop.dao.ProductDao;
 import com.es.phoneshop.dao.impl.ProductDaoImpl;
+import com.es.phoneshop.model.ProductSearchCriteria;
 import com.es.phoneshop.model.ProductSortCriteria;
 import com.es.phoneshop.exception.ProductNotFoundException;
 import com.es.phoneshop.model.Product;
@@ -39,12 +40,24 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public List<Product> findProducts() {
+        return productsFilter(
+                productDao.findProducts()
+        );
+    }
+
+    @Override
     public List<Product> findProducts(String query, ProductSortCriteria sort) {
-        return productDao.findProducts(query, sort)
-                .stream()
-                .filter(product -> product.getPrice() != null)
-                .filter(product -> product.getStock() > 0)
-                .collect(Collectors.toList());
+        return productsFilter(
+                productDao.findProducts(query, sort)
+        );
+    }
+
+    @Override
+    public List<Product> findProducts(String query, ProductSearchCriteria search) {
+        return productsFilter(
+                productDao.findProducts(query, search)
+        );
     }
 
     @Override
@@ -57,6 +70,13 @@ public class ProductServiceImpl implements ProductService {
     public void delete(@NonNull UUID id) {
         productDao.delete(id);
         LOGGER.debug("Delete product. Id: {}", id);
+    }
+
+    private List<Product> productsFilter(List<Product> products) {
+        return products.stream()
+                .filter(product -> product.getPrice() != null)
+                .filter(product -> product.getStock() > 0)
+                .collect(Collectors.toList());
     }
 
 }

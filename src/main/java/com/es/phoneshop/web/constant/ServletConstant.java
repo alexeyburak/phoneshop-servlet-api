@@ -7,6 +7,7 @@ public interface ServletConstant {
     String REQUEST_DISPATCHER_CART = "/WEB-INF/pages/cart.jsp";
     String REQUEST_DISPATCHER_CHECKOUT = "/WEB-INF/pages/checkout.jsp";
     String REQUEST_DISPATCHER_OVERVIEW = "/WEB-INF/pages/orderOverview.jsp";
+    String REQUEST_DISPATCHER_ADVANCED_SEARCH = "/WEB-INF/pages/advancedSearch.jsp";
 
     interface RequestAttribute {
         String PRODUCTS = "products";
@@ -23,6 +24,10 @@ public interface ServletConstant {
         String PHONE = "phone";
         String DELIVERY_ADDRESS = "deliveryAddress";
         String DELIVERY_DATE = "deliveryDate";
+        String SEARCH_METHOD = "searchMethod";
+        String SEARCH_METHODS = "searchMethods";
+        String MIN_PRICE = "minPrice";
+        String MAX_PRICE = "maxPrice";
     }
 
     interface RequestParameter {
